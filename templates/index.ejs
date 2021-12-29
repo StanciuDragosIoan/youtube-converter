@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Youtube Converter</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+    .alert{
+      margin-top:2rem;
+      text-align:center;
+      color: red;
+      font-weight:600;
+      border: 2px solid red;
+    }
+
+    .ok { 
+      margin-top:2rem;
+      text-align:center;
+      color: green;
+      font-weight:600;
+      border: 2px solid green;
+    }
+  </style>
+  </head>
+
+<body>
+  <div class="container">
+    <div class="row mx-auto">
+      <div class="col-sm-12 col-md-7 mx-auto card my-5 p-5">
+        <h1 class="text-center">Youtube Converter</h1>
+      </div>
+
+
+      <div class="col-sm-12 col-md-7 mx-auto card p-5">
+        <form>
+          <h3 class="text-center">Paste in your youtube url</h3>
+          <div class="mb-3 form-check">
+            <label for="url" class="form-label">
+              URL
+            </label>
+            <input type="url" class="form-control" id="urlInput" name="url" />
+            <p class="mt-1" id="urlAlert"></p>
+          </div>
+
+
+          <div class="my-5 form-check">
+            <label for="format" class="form-label">Download Format</label>
+            <select class="form-select" id="format" required>
+              <option selected disabled value="">Choose format</option>
+              <option>audio</option>
+              <option>video</option>
+            </select>
+            <p id="formatAlert"></p>
+          </div>
+
+          <div class="container">
+            <button id="submitBtn" class="btn btn-primary d-block mx-auto w-100">
+              Convert</button> 
+             
+              <div class="parent">
+
+             
+              <button id="downloadBtn" class="btn btn-warning mx-auto w-100 mt-5">
+              
+   
+              </div>
+
+              <div class="spinner">
+                <button class="btn btn-primary mx-auto w-100 mt-5" type="button" disabled>
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  <span>Converting...</span>
+                </button>
+              </div>
+             </div>
+          </div>
+
+      </div>
+
+
+
+      </form>
+    </div>
+  </div>
+  </div>
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.min.js" integrity="sha512-u9akINsQsAkG9xjc1cnGF4zw5TFDwkxuc9vUp5dltDWYCSmyd0meygbvgXrlc/z7/o4a19Fb5V0OUE58J7dcyw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    const btn = document.querySelector("#submitBtn");
+    const urlInput = document.querySelector("#urlInput"); 
+    const formatInput = document.querySelector("#format");
+    const downloadBtn = document.querySelector("#downloadBtn");
+    const parent = document.querySelector(".parent")
+    parent.style.display = "none";
+    const spinner = document.querySelector(".spinner");
+    spinner.style.display = "none";
+    const formData = {};
+
+const displayAlert = (selector, msg, className) => {
+  document.querySelector(selector).innerHTML = msg;
+  document.querySelector(selector).className = className;
+}
+
+
+const valdiateUrl = (url) => {
+  const pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+    '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+  return !!pattern.test(url);
+}
+
+const grabUrl = () => {
+  const url = urlInput.value;
+  
+  const isValidUrl = valdiateUrl(url);
+  if (isValidUrl) {
+    formData.url = url; 
+    displayAlert("#urlAlert", "Url OK", "ok")
+  } else {
+    displayAlert("#urlAlert", "invalid Url", "alert");
+  }
+}
+
+
+const grabFormat = (e) => {
+  formData.format = e.target.value;
+}
+
+const submitData = async (e) => {
+  e.preventDefault();
+   if(!formData['url']){ 
+     displayAlert("#urlAlert", "missing Url", "alert");
+   } else if(!formData['format']){ 
+     displayAlert("#formatAlert", "missing Format", "alert");
+   } else {
+    displayAlert("#urlAlert", "", "");
+    displayAlert("#formatAlert", "", "");
+    const { format } = formData;
+    try{ 
+      spinner.style.display = "block";
+      parent.style.display = "none";
+      const reply = await axios.post(`/${format}`, formData);
+      triggerDownload(reply);
+    }catch(err){
+      console.log(err);
+    }
+   }
+}
+
+const triggerDownload  =  (reply) => { 
+  spinner.style.display = "none";
+  parent.style.display = "block";
+  downloadBtn.ext = reply.data.ext;
+  let iconPlaceholder;
+  if(reply.data.ext === "mp3"){
+    iconPlaceholder = `<i class="fas fa-music"></i>`;
+  } 
+  if(reply.data.ext === "mp4"){
+    iconPlaceholder = `<i class="fas fa-film"></i>`;
+  } 
+
+  if(reply.data.isTooLong === true) {
+    downloadBtn.innerHTML = `<h1>Video size is too long</h1>`;
+    downloadBtn.disabled = true;
+  } else {
+    downloadBtn.innerHTML = `<strong>Download</strong> ${reply.data.title} .${downloadBtn.ext} ${iconPlaceholder}`;
+    downloadBtn.id = reply.data.id;
+  } 
+}
+
+const downloadSong = async (e) => {
+  e.preventDefault(); 
+  const id = e.target.id;
+  const ext = e.target.ext; 
+  const rootDomain = window.location.origin;
+  window.open(`${rootDomain}/download/${id}?extension=${ext}`,'_blank');
+}
+
+
+btn.addEventListener("click", submitData);
+
+downloadBtn.addEventListener("click", downloadSong);
+urlInput.addEventListener("input", grabUrl);
+formatInput.addEventListener("input", grabFormat);
+
+     
+  </script>
+</body>
